@@ -2,26 +2,28 @@ name: Crypto News Bot
 
 on:
   schedule:
+    # Roda de 2 em 2 horas (00:00, 02:00, 04:00...)
     - cron: '0 */2 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Permite que você clique em "Run workflow" para testar
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout do código
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Configurar Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: pip install pyTelegramBotAPI requests
+      - name: Instalar dependências
+        # Adicionei o 'deep-translator' aqui para a tradução funcionar
+        run: pip install pyTelegramBotAPI requests deep-translator
 
-      - name: Run Bot
-        env:  # <--- ESSA PARTE É A MAIS IMPORTANTE
+      - name: Executar Bot JP Safada
+        env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CRYPTOPANIC_KEY: ${{ secrets.CRYPTOPANIC_KEY }}
