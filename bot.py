@@ -1,85 +1,81 @@
 import os
 import requests
 import telebot
+import json
 
 # --- CONFIGURAÇÕES ---
 TOKEN_TELEGRAM = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
-API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY')
+key_raw = os.environ.get('CRYPTOPANIC_KEY', '')
+API_CRYPTOPANIC = key_raw.strip()
 
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
-# --- SEUS GATILHOS ---
-GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'WIF', 'RWA', 'AI']
+# --- GATILHOS 2026 ---
+GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE']
 
-def diagnostico_e_busca():
-    print("----- INICIANDO DIAGNÓSTICO -----")
+def buscar_noticias():
+    print("----- INICIANDO CONEXÃO -----")
     
-    # 1. Verifica se a chave existe dentro do ambiente do GitHub
-    if not API_CRYPTOPANIC:
-        print("❌ ERRO GRAVE: O Python não encontrou a chave 'CRYPTOPANIC_KEY'.")
-        print("👉 O problema está no arquivo YAML ou no nome do Secret nas configurações.")
-        return "Erro interno de configuração (Chave ausente)."
+    # 1. URL sem a barra no final (Correção para erro 404)
+    url = "https://cryptopanic.com/api/v1/posts" 
     
-    # Mostra os primeiros 4 digitos da chave pra confirmar se leu (segurança)
-    print(f"✅ Chave carregada. Início: {API_CRYPTOPANIC[:4]}***")
-    
-    # 2. Tenta a requisição de forma mais limpa (usando params)
-    url = "https://cryptopanic.com/api/v1/posts/"
-    
+    # 2. Montagem segura dos parâmetros
     params = {
-        "auth_token": API_CRYPTOPANIC.strip(),
+        "auth_token": API_CRYPTOPANIC,
         "public": "true",
         "filter": "hot",
         "kind": "news"
     }
 
-    # Headers simples
+    # 3. Headers completos para simular um PC real (Evita bloqueio)
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
     }
 
-    print(f"🔄 Tentando conectar em: {url}")
-    
+    print(f"🔄 Acessando: {url} (Token final: ...{API_CRYPTOPANIC[-4:] if API_CRYPTOPANIC else 'NULO'})")
+
     try:
-        response = requests.get(url, params=params, headers=headers)
-        
-        print(f"📡 Status Code recebido: {response.status_code}")
-        
-        # Se der erro 404 ou outro, vamos ver o que o site respondeu (HTML ou erro)
+        response = requests.get(url, params=params, headers=headers, timeout=15)
+        print(f"📡 Status Code: {response.status_code}")
+
+        # Se der erro, mostra o que o site respondeu
         if response.status_code != 200:
-            print(f"⚠️ Corpo da resposta (Erro): {response.text[:200]}") # Imprime o erro real
-            return f"Erro na API: {response.status_code}"
+            print(f"⚠️ Erro na resposta: {response.text[:200]}")
+            return f"Erro na API ({response.status_code}). Veja o log."
 
         data = response.json()
-        print("✅ Conexão bem sucedida! JSON recebido.")
-        
+        print("✅ Dados recebidos com sucesso!")
+
     except Exception as e:
-        print(f"❌ Exceção Python: {e}")
+        print(f"❌ Erro Crítico: {e}")
         return f"Erro técnico: {e}"
 
-    # --- PROCESSAMENTO (Igual ao anterior) ---
+    # --- FILTRAGEM ---
     destaques = []
     
     if 'results' in data:
         for post in data['results'][:15]:
-            titulo = post['title'].upper()
+            titulo = post['title']
             url_noticia = post['url']
             
+            # Verifica gatilhos (case insensitive)
             for gatilho in GATILHOS:
-                if gatilho in titulo:
-                    destaques.append(f"🔥 *{gatilho}:* {post['title']}\n🔗 [Ler]({url_noticia})")
+                if gatilho in titulo.upper():
+                    destaques.append(f"🔥 *{gatilho} DETECTADO:*\n{titulo}\n🔗 [Ler]({url_noticia})")
                     break
     
     if not destaques:
-        return "Monitoramento ativo. Nenhuma 'bomba' detectada agora."
+        return "Nenhuma 'Bomba' de mercado detectada agora."
         
-    return "🚨 *ALERTA 2026:*\n\n" + "\n\n".join(destaques)
+    return "🚨 *ALERTA CRIPTO 2026:*\n\n" + "\n\n".join(destaques)
 
 if __name__ == "__main__":
-    msg = diagnostico_e_busca()
     try:
-        bot.send_message(CHAT_ID, msg, parse_mode='Markdown')
+        msg = buscar_noticias()
+        bot.send_message(CHAT_ID, msg, parse_mode='Markdown', disable_web_page_preview=True)
         print("Mensagem enviada.")
     except Exception as e:
         print(f"Erro Telegram: {e}")
