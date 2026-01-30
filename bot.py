@@ -15,41 +15,77 @@ tradutor = GoogleTranslator(source='auto', target='pt')
 # --- GATILHOS ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE']
 
-# --- IMAGENS TRADER (PROFISSIONAL) ---
+# --- IMAGENS TRADER ---
 IMAGENS_TRABALHO = [
-    "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1000&auto=format&fit=crop", # Candlestick gold
-    "https://images.unsplash.com/photo-1642790106117-e829e14a795f?q=80&w=1000&auto=format&fit=crop", # Bull market
-    "https://images.unsplash.com/photo-1621504450168-38f647311816?q=80&w=1000&auto=format&fit=crop", # Bitcoin digital
-    "https://cdn.pixabay.com/photo/2017/09/07/08/54/money-2724241_1280.jpg", # Graph analysis
-    "https://cdn.pixabay.com/photo/2021/04/30/16/47/binance-6219389_1280.jpg", # Coins generic
-    "https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=1000&auto=format&fit=crop"  # Serious Crypto Blue
+    "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1000&auto=format&fit=crop", 
+    "https://images.unsplash.com/photo-1642790106117-e829e14a795f?q=80&w=1000&auto=format&fit=crop", 
+    "https://images.unsplash.com/photo-1621504450168-38f647311816?q=80&w=1000&auto=format&fit=crop", 
+    "https://cdn.pixabay.com/photo/2017/09/07/08/54/money-2724241_1280.jpg", 
+    "https://cdn.pixabay.com/photo/2021/04/30/16/47/binance-6219389_1280.jpg", 
+    "https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=1000&auto=format&fit=crop"
 ]
 
-# --- CÉREBRO ANALÍTICO (Mantido igual, pois ficou ótimo) ---
-def gerar_insight(titulo, par_moeda):
+# --- CÉREBRO AVANÇADO (FUTUROS & PRAZOS) ---
+def analise_avancada(titulo, par_moeda):
     titulo = titulo.upper()
-    ativo = par_moeda if par_moeda else "o ativo mencionado"
+    ativo = par_moeda if par_moeda else "o ativo"
 
-    if any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'LOW']):
-        return f"📉 *Setup:* O mercado indica medo extremo. Baleias costumam acumular nessas zonas. Procure por divergências de alta no RSI para o par *{ativo}*."
+    # --- CENÁRIO 1: MEDO/QUEDA (DUMP) ---
+    if any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'LOW', 'DROP']):
+        return (
+            f"📉 *Estratégia Bearish (Queda)*\n"
+            f"• *Curto Prazo (15m - 1h):* Alta pressão vendedora. Busque operações de **SHORT** em repiques de baixa.\n"
+            f"• *Médio Prazo (Diário):* O RSI pode estar sobrevendido. Cuidado com shorts longos, baleias podem começar a defender essa região.\n"
+            f"🎯 *Foco:* Scalping rápido na venda em *{ativo}*."
+        )
     
-    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BREAKOUT', 'BULL']):
-        return f"🚀 *Setup:* Rompimento de topo detectado. A tendência é forte, mas cuidado com correções. Ajuste o Stop-Loss e siga a tendência de alta em *{ativo}*."
+    # --- CENÁRIO 2: EUFORIA/ALTA (PUMP) ---
+    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BREAKOUT', 'BULL', 'JUMP']):
+        return (
+            f"🚀 *Estratégia Bullish (Alta)*\n"
+            f"• *Curto Prazo (1h - 4h):* Momentum muito forte. **LONG** a favor da tendência é o ideal agora.\n"
+            f"• *Longo Prazo (Semanal):* Ativo esticado. Se opera swing trade, aguarde um reteste (pullback) antes de entrar pesado, pois pode corrigir.\n"
+            f"🎯 *Foco:* Surfar a alta com Stop curto em *{ativo}*."
+        )
     
-    elif any(x in titulo for x in ['COMPRESS', 'CONSOLIDATE', 'SIDEWAYS', 'STABLE', 'SQUEEZE']):
-        return f"⚠️ *Setup:* Compressão de preço (Bandeira ou Triângulo). Aguarde o candle de força romper a consolidação para entrar a favor do movimento em *{ativo}*."
+    # --- CENÁRIO 3: COMPRESSÃO/LATERAL (ACUMULAÇÃO) ---
+    elif any(x in titulo for x in ['COMPRESS', 'CONSOLIDATE', 'SIDEWAYS', 'STABLE', 'SQUEEZE', 'RANGE']):
+        return (
+            f"⚠️ *Estratégia de Volatilidade*\n"
+            f"• *Intraday (H1):* O preço está preso. Não opere no meio do gráfico. Aguarde rompimento.\n"
+            f"• *Visão Macro:* Compressão precede explosão. Coloque alertas nas extremidades. Se romper pra cima, é **LONG** agressivo.\n"
+            f"🎯 *Foco:* Paciência. O próximo movimento de *{ativo}* será violento."
+        )
     
-    elif any(x in titulo for x in ['WHALE', 'BUYING', 'ACCUMULATE', 'INFLOW', 'MOVE']):
-        return f"🐳 *Setup:* Fluxo institucional detectado. Smart Money se posicionando. Acompanhe o volume financeiro no gráfico de 4H do *{ativo}*."
-    
+    # --- CENÁRIO 4: BALEIAS/INSTITUCIONAL (SMART MONEY) ---
+    elif any(x in titulo for x in ['WHALE', 'BUYING', 'ACCUMULATE', 'INFLOW', 'MOVE', 'BLACKROCK']):
+        return (
+            f"🐳 *Rastreando as Baleias*\n"
+            f"• *Curto Prazo:* Pode haver manipulação para estopar sardinhas (fake out). Cuidado com alavancagem alta.\n"
+            f"• *Longo Prazo:* O Dinheiro Inteligente está entrando. A tendência primária de *{ativo}* se torna altista.\n"
+            f"🎯 *Foco:* Comprar correções (Buy the Dip)."
+        )
+
+    # --- CENÁRIO 5: REGULAÇÃO/FUD (INCERTEZA) ---
     elif any(x in titulo for x in ['SEC', 'SUING', 'LAWSUIT', 'BAN', 'REGULATION']):
-        return f"⚖️ *Setup:* Notícia de impacto regulatório (FUD). Alta volatilidade esperada. Evite operar alavancado em *{ativo}* até o mercado digerir a notícia."
+        return (
+            f"⚖️ *Alerta de Risco (News Trading)*\n"
+            f"• *Imediato:* O mercado odeia incerteza. Provável **DUMP** (queda) inicial por pânico.\n"
+            f"• *Pós-Notícia:* Muitas vezes o mercado recupera em 'V'. Se operar Short, realize lucro rápido.\n"
+            f"🎯 *Foco:* Proteja seu capital. Alta volatilidade em *{ativo}*."
+        )
 
     else:
-        return f"👀 *Conclusão:* Fique atento ao Price Action de *{ativo}*. Se perder o suporte imediato, aguarde repique para venda."
+        # Genérico criativo
+        return (
+            f"👀 *Análise de Fluxo*\n"
+            f"• *Curto Prazo:* Notícia neutra, siga o Price Action de 15 minutos.\n"
+            f"• *Longo Prazo:* Sem impacto estrutural na tendência de *{ativo}* por enquanto.\n"
+            f"🎯 *Foco:* Aguardar confirmação de volume."
+        )
 
 def buscar_noticias():
-    print("----- JP SAFADA 5.1 (CLEAN DESIGN) -----")
+    print("----- JP SAFADA 6.0 (FUTUROS MASTER) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
@@ -66,7 +102,7 @@ def buscar_noticias():
         response = requests.get(url, params=params, headers=headers, timeout=15)
         data = response.json()
     except Exception as e:
-        return None, f"Chefinho, sem conexão com a exchange: {e}"
+        return None, f"Chefinho, a exchange travou aqui: {e}"
 
     destaques = []
     
@@ -102,22 +138,23 @@ def buscar_noticias():
                     except:
                         titulo_pt = titulo_en 
                     
-                    insight = gerar_insight(titulo_en, par_usdt)
+                    # CHAMADA DA NOVA FUNÇÃO DE FUTUROS
+                    analise = analise_avancada(titulo_en, par_usdt)
 
-                    # --- MONTAGEM LIMPA (SEM FONTE) ---
+                    # --- MONTAGEM COMPLETA ---
                     texto_formatado = (
                         f"🔥 *{gatilho} DETECTADO*\n"
-                        f"🇧🇷 *{titulo_pt}*\n\n" # Pulei duas linhas pra separar o titulo da analise
-                        f"{insight}\n\n"
+                        f"🇧🇷 *{titulo_pt}*\n\n" 
+                        f"{analise}\n\n"
                         f"🔗 [Ler matéria completa]({link})"
                     )
                     destaques.append(texto_formatado)
                     break 
     
     if not destaques:
-        return None, "Mercado lateral, chefinho. Sem setups claros agora."
+        return None, "Mercado lateral, chefinho. Sem setups de futuros agora."
 
-    cabecalho = "Oi chefinho, JP SAFADA trazendo setups e notícias 💅🏻📊\n\n"
+    cabecalho = "Oi chefinho, JP SAFADA trazendo o Raio-X dos Futuros 💅🏻🕯️\n\n"
     corpo = "\n\n➖➖➖➖➖➖➖➖➖➖\n\n".join(destaques)
     msg_final = cabecalho + corpo
     
@@ -132,7 +169,7 @@ if __name__ == "__main__":
         if imagem and texto and "Mercado lateral" not in texto:
             try:
                 bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
-                print("✅ Relatório Trader enviado!")
+                print("✅ Relatório Futuros enviado!")
             except:
                 bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
                 print("✅ Texto enviado (Fallback).")
