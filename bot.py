@@ -14,7 +14,10 @@ API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY', '').strip()
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
-# --- GATILHOS DE ATIVOS ---
+# --- VARIÁVEL DE MENSAGEM VAZIA (Sua solicitação) ---
+MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nSem notícias por enquanto, o mercado tá tirando um cochilo. Daqui a pouco eu volto!"
+
+# --- GATILHOS ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE']
 
 # --- IMAGENS ---
@@ -27,13 +30,11 @@ IMAGENS_TRABALHO = [
     "https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=1000&auto=format&fit=crop"
 ]
 
-# --- CÉREBRO DE CONFIRMAÇÃO E FUTUROS ---
+# --- CÉREBRO H1 ---
 def analise_h1_confirmation(titulo, par_moeda):
     titulo = titulo.upper()
     ativo = par_moeda if par_moeda else "o ativo"
 
-    # 1. DETECTOR DE CONFIRMAÇÃO (ACONTECEU AGORA)
-    # Palavras que indicam que o movimento JÁ ocorreu
     if any(x in titulo for x in ['HIT', 'REACH', 'BREAK', 'SURPASS', 'EXPLODE', 'TOP', 'LIQUIDATE', 'JUMP']):
         return (
             f"✅ *ATUALIZAÇÃO DE MERCADO: Confirmado!*\n"
@@ -42,7 +43,6 @@ def analise_h1_confirmation(titulo, par_moeda):
             f"🎯 *Status:* Volatilidade alta confirmada em *{ativo}*."
         )
 
-    # 2. DETECTOR DE QUEDA/MEDO (SETUP DE VENDA)
     elif any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'LOW', 'DROP', 'SLIP']):
         return (
             f"📉 *Alerta de Short (Venda)*\n"
@@ -51,7 +51,6 @@ def analise_h1_confirmation(titulo, par_moeda):
             f"🎯 *Foco:* Acompanhe médias móveis curtas em *{ativo}*."
         )
     
-    # 3. DETECTOR DE ALTA/FORÇA (SETUP DE COMPRA)
     elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BULL', 'RALLY']):
         return (
             f"🚀 *Alerta de Long (Compra)*\n"
@@ -60,7 +59,6 @@ def analise_h1_confirmation(titulo, par_moeda):
             f"🎯 *Foco:* Stop abaixo do último fundo de *{ativo}*."
         )
     
-    # 4. DETECTOR DE LATERALIZAÇÃO (AGUARDAR)
     elif any(x in titulo for x in ['COMPRESS', 'CONSOLIDATE', 'SIDEWAYS', 'STABLE', 'SQUEEZE', 'RANGE']):
         return (
             f"⚠️ *Aguarde Confirmação*\n"
@@ -69,7 +67,6 @@ def analise_h1_confirmation(titulo, par_moeda):
             f"🎯 *Foco:* Paciência em *{ativo}*."
         )
     
-    # 5. PADRÃO (INSTITUCIONAL/NEWS)
     else:
         return (
             f"👀 *Radar Ligado*\n"
@@ -79,7 +76,7 @@ def analise_h1_confirmation(titulo, par_moeda):
         )
 
 def buscar_noticias():
-    print("----- JP SAFADA 7.0 (H1 OPERATIONAL) -----")
+    print("----- JP SAFADA 7.1 (COM AVISO DE SEM NEWS) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
@@ -100,24 +97,20 @@ def buscar_noticias():
 
     destaques = []
     
-    # --- FILTRO DE TEMPO (35 MINUTOS) ---
-    # Como o bot roda a cada 30 min, pegamos notícias dos últimos 35 min (5 min de margem)
+    # Filtro de tempo (35 min)
     agora = datetime.utcnow()
     limite_tempo = agora - timedelta(minutes=35)
 
     if 'results' in data:
-        for post in data['results']: # Removemos o limite [:8] para verificar todas recentes
+        for post in data['results']: 
             
-            # Verificação de Data
             if 'published_at' in post:
                 data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
-                # SE A NOTÍCIA FOR VELHA, PULA ELA
                 if data_noticia < limite_tempo:
                     continue
             
             titulo_en = post.get('title', '')
             
-            # --- DETECTOR DE MOEDA ---
             par_usdt = None
             if 'currencies' in post and post['currencies']:
                 codigo = post['currencies'][0].get('code')
@@ -130,7 +123,6 @@ def buscar_noticias():
                         par_usdt = f"{g}/USDT"
                         break
 
-            # --- LINK ---
             if 'url' in post:
                 link = post['url']
             elif 'slug' in post:
@@ -145,7 +137,6 @@ def buscar_noticias():
                     except:
                         titulo_pt = titulo_en 
                     
-                    # NOVA ANÁLISE COM CONFIRMAÇÃO
                     analise = analise_h1_confirmation(titulo_en, par_usdt)
 
                     texto_formatado = (
@@ -157,11 +148,11 @@ def buscar_noticias():
                     destaques.append(texto_formatado)
                     break 
     
+    # --- AQUI ESTÁ A LÓGICA DA VARIÁVEL ---
     if not destaques:
-        # Se não tiver nada NOVO nos últimos 30 min, não manda nada (Silêncio é melhor que repetição)
-        # Retorna None para ambos
-        print("Nenhuma notícia nova nos últimos 35 minutos.")
-        return None, None 
+        print("Sem notícias novas. Enviando aviso padrão.")
+        # Retorna SEM IMAGEM (None) e com a mensagem de aviso
+        return None, MSG_SEM_NOTICIAS
 
     cabecalho = "Oi chefinho, JP SAFADA com atualizações de H1 pra você 💅🏻⏳\n\n"
     corpo = "\n\n➖➖➖➖➖➖➖➖➖➖\n\n".join(destaques)
@@ -175,16 +166,19 @@ if __name__ == "__main__":
     try:
         imagem, texto = buscar_noticias()
         
-        # Só envia se tiver texto (Se for None, ele ignora e não spamma)
         if texto:
-            try:
-                bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
-                print("✅ Relatório H1 enviado!")
-            except:
-                bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
-                print("✅ Texto enviado (Fallback).")
-        else:
-            print("Bot rodou mas não houve novidades (Evitando spam).")
+            # Se tiver imagem, é notícia (manda foto)
+            if imagem:
+                try:
+                    bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
+                    print("✅ Relatório H1 enviado!")
+                except:
+                    bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
+            
+            # Se NÃO tiver imagem, é o aviso de "Sem Notícias" (manda só texto)
+            else:
+                bot.send_message(CHAT_ID, texto)
+                print("✅ Aviso de 'Sem Notícias' enviado.")
             
     except Exception as e:
-        print(f"❌ Erro: {e}")
+        print(f"❌
