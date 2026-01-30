@@ -6,8 +6,7 @@ import json
 # --- CONFIGURAÇÕES ---
 TOKEN_TELEGRAM = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
-key_raw = os.environ.get('CRYPTOPANIC_KEY', '')
-API_CRYPTOPANIC = key_raw.strip()
+API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY', '').strip()
 
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
@@ -15,12 +14,12 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE']
 
 def buscar_noticias():
-    print("----- INICIANDO CONEXÃO -----")
+    print("----- INICIANDO CONEXÃO (NÍVEL DEVELOPER) -----")
     
-    # 1. URL sem a barra no final (Correção para erro 404)
-    url = "https://cryptopanic.com/api/v1/posts" 
+    # --- CORREÇÃO FINAL AQUI ---
+    # Sua conta é Developer, então a URL base é v2 e não v1
+    url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
-    # 2. Montagem segura dos parâmetros
     params = {
         "auth_token": API_CRYPTOPANIC,
         "public": "true",
@@ -28,23 +27,19 @@ def buscar_noticias():
         "kind": "news"
     }
 
-    # 3. Headers completos para simular um PC real (Evita bloqueio)
+    # Headers para evitar bloqueio
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Content-Type": "application/json"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    print(f"🔄 Acessando: {url} (Token final: ...{API_CRYPTOPANIC[-4:] if API_CRYPTOPANIC else 'NULO'})")
-
+    print(f"🔄 Acessando: {url}")
+    
     try:
         response = requests.get(url, params=params, headers=headers, timeout=15)
-        print(f"📡 Status Code: {response.status_code}")
-
-        # Se der erro, mostra o que o site respondeu
+        
         if response.status_code != 200:
             print(f"⚠️ Erro na resposta: {response.text[:200]}")
-            return f"Erro na API ({response.status_code}). Veja o log."
+            return f"Erro na API ({response.status_code})."
 
         data = response.json()
         print("✅ Dados recebidos com sucesso!")
@@ -53,7 +48,7 @@ def buscar_noticias():
         print(f"❌ Erro Crítico: {e}")
         return f"Erro técnico: {e}"
 
-    # --- FILTRAGEM ---
+    # --- PROCESSAMENTO ---
     destaques = []
     
     if 'results' in data:
@@ -61,7 +56,7 @@ def buscar_noticias():
             titulo = post['title']
             url_noticia = post['url']
             
-            # Verifica gatilhos (case insensitive)
+            # Verifica gatilhos
             for gatilho in GATILHOS:
                 if gatilho in titulo.upper():
                     destaques.append(f"🔥 *{gatilho} DETECTADO:*\n{titulo}\n🔗 [Ler]({url_noticia})")
