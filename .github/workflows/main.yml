@@ -2,9 +2,9 @@ name: Crypto News Bot
 
 on:
   schedule:
-    # Roda de 2 em 2 horas (00:00, 02:00, 04:00...)
-    - cron: '0 */2 * * *'
-  workflow_dispatch: # Permite que você clique em "Run workflow" para testar
+    # MUDANÇA AQUI: Roda a cada 30 minutos (*/30)
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,8 +19,7 @@ jobs:
           python-version: '3.9'
 
       - name: Instalar dependências
-        # Adicionei o 'deep-translator' aqui para a tradução funcionar
-        run: pip install pyTelegramBotAPI requests deep-translator
+        run: pip install pyTelegramBotAPI requests deep-translator python-dateutil
 
       - name: Executar Bot JP Safada
         env:
