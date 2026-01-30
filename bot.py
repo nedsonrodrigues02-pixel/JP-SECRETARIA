@@ -12,22 +12,45 @@ API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY', '').strip()
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
-# --- GATILHOS ---
-GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP']
+GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA']
 
-# --- BANCO DE IMAGENS ATUALIZADO (Links mais estáveis) ---
+# --- BANCO DE IMAGENS (Links estáveis) ---
 IMAGENS_ZUEIRA = [
-    "https://media.tenor.com/images/1c0155b486e929f6498ba4b3b02ba547/tenor.gif", # Doge
-    "https://i.pinimg.com/originals/7d/44/1f/7d441fa14580436d10c5383505c24949.gif", # Matrix
-    "https://media1.giphy.com/media/trN9df5NmUOqCx21jo/giphy.gif", # Bull
-    "https://media.giphy.com/media/7FBY7h5Psqd20/giphy.gif", # Money
-    # Adicionei imagens estáticas também caso os GIFs falhem
+    "https://media.tenor.com/images/1c0155b486e929f6498ba4b3b02ba547/tenor.gif",
+    "https://i.pinimg.com/originals/7d/44/1f/7d441fa14580436d10c5383505c24949.gif",
+    "https://media1.giphy.com/media/trN9df5NmUOqCx21jo/giphy.gif",
     "https://cdn.pixabay.com/photo/2018/01/18/07/31/bitcoin-3089728_1280.jpg",
     "https://cdn.pixabay.com/photo/2021/05/09/13/10/finance-6240949_1280.jpg"
 ]
 
+# --- CÉREBRO DA JP (GERADOR DE INSIGHTS) ---
+def gerar_insight(titulo):
+    titulo = titulo.upper()
+    
+    # Dicionário de reações baseadas em palavras-chave
+    if any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP']):
+        return "📉 *Análise:* O mercado está com medo extremo. Historicamente, quando o varejo capitula, as baleias começam a acumular. Pode ser uma oportunidade de compra fracionada."
+    
+    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BREAKOUT']):
+        return "🚀 *Análise:* Momento de euforia e rompimento de topo. Cuidado com FOMO, mas a tendência é de alta forte. Ajuste os stop-loss."
+    
+    elif any(x in titulo for x in ['COMPRESS', 'CONSOLIDATE', 'SIDEWAYS', 'STABLE']):
+        return "⚠️ *Análise:* O preço está comprimindo. Isso geralmente antecede um movimento explosivo (para cima ou para baixo). Aguarde a confirmação do rompimento."
+    
+    elif any(x in titulo for x in ['WHALE', 'BUYING', 'ACCUMULATE', 'INFLOW']):
+        return "🐳 *Análise:* Dinheiro inteligente (Smart Money) entrando. Se as baleias estão comprando, a probabilidade de alta no médio prazo aumenta."
+    
+    elif any(x in titulo for x in ['SEC', 'SUING', 'LAWSUIT', 'BAN', 'REGULATION']):
+        return "⚖️ *Análise:* Ruído regulatório gera volatilidade e quedas rápidas (FUD). Geralmente são boas chances de compra após o pânico inicial."
+    
+    elif any(x in titulo for x in ['AI', 'GPT', 'NVIDIA', 'TECH']):
+        return "🤖 *Análise:* Narrativa de IA está muito forte. Moedas desse setor tendem a performar acima da média do Bitcoin."
+
+    else:
+        return "👀 *Conclusão:* Notícia neutra ou de impacto indireto. Fique atento ao volume nas próximas horas para confirmar a direção."
+
 def buscar_noticias():
-    print("----- RODANDO A JP SAFADA (V3.0 - BLINDADA) -----")
+    print("----- JP SAFADA 4.0 (ANALISTA) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
@@ -38,22 +61,29 @@ def buscar_noticias():
         "kind": "news"
     }
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+    headers = { "User-Agent": "Mozilla/5.0" }
     
     try:
         response = requests.get(url, params=params, headers=headers, timeout=15)
         data = response.json()
     except Exception as e:
-        return None, f"Chefinho, deu ruim na conexão: {e}"
+        return None, f"Chefinho, a internet caiu aqui: {e}"
 
     destaques = []
     
     if 'results' in data:
-        for post in data['results'][:10]: 
+        for post in data['results'][:8]: 
             titulo_en = post.get('title', '')
             
+            # --- CORREÇÃO DA FONTE ---
+            # Tenta pegar dentro de 'source' > 'title', se não der, pega 'domain'
+            fonte = "Desconhecida"
+            if 'source' in post and 'title' in post['source']:
+                fonte = post['source']['title']
+            elif 'domain' in post:
+                fonte = post['domain']
+
+            # --- LINK ---
             if 'url' in post:
                 link = post['url']
             elif 'slug' in post:
@@ -61,31 +91,32 @@ def buscar_noticias():
             else:
                 link = "https://cryptopanic.com"
 
-            fonte = post.get('domain', 'Fonte desconhecida')
-
             for gatilho in GATILHOS:
                 if gatilho in titulo_en.upper():
-                    # --- TRADUÇÃO SEGURA ---
+                    # Tradução
                     try:
                         titulo_pt = tradutor.translate(titulo_en)
                     except:
                         titulo_pt = titulo_en 
+                    
+                    # GERA O INSIGHT
+                    insight = gerar_insight(titulo_en)
 
                     texto_formatado = (
                         f"🔥 *{gatilho} DETECTADO*\n"
                         f"🇧🇷 *{titulo_pt}*\n"
-                        f"🇺🇸 _{titulo_en}_\n"
-                        f"🗞️ Fonte: {fonte}\n"
+                        f"🗞️ _Fonte: {fonte}_\n\n"
+                        f"{insight}\n\n"
                         f"🔗 [Ler matéria completa]({link})"
                     )
                     destaques.append(texto_formatado)
                     break 
     
     if not destaques:
-        return None, "Nada de relevante agora, chefinho."
+        return None, "Mercado lateral, chefinho. Nada pra operar agora."
 
-    cabecalho = "Oi chefinho aqui sou eu a JP SAFADA molestada e trago notícias 💅🏻\n\n"
-    corpo = "\n\n━━━━━━━━━━━━━━━━━━━━\n\n".join(destaques)
+    cabecalho = "Oi chefinho, JP SAFADA trazendo o ouro pra você operar 💅🏻💰\n\n"
+    corpo = "\n\n➖➖➖➖➖➖➖➖➖➖\n\n".join(destaques)
     msg_final = cabecalho + corpo
     
     imagem = random.choice(IMAGENS_ZUEIRA)
@@ -96,20 +127,16 @@ if __name__ == "__main__":
     try:
         imagem, texto = buscar_noticias()
         
-        if imagem and texto and "Nada de relevante" not in texto:
+        if imagem and texto and "Nada pra operar" not in texto:
             try:
-                # TENTA ENVIAR A FOTO
-                print(f"Tentando enviar imagem: {imagem}")
                 bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
-                print("✅ Sucesso: Foto enviada!")
-            except Exception as e_foto:
-                # SE A FOTO FALHAR, ENVIA SÓ O TEXTO (FALLBACK)
-                print(f"⚠️ Erro na imagem ({e_foto}). Enviando apenas texto...")
+                print("✅ Foto + Análise enviada!")
+            except:
                 bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
-                print("✅ Sucesso: Texto enviado (modo de segurança).")
+                print("✅ Texto enviado (Fallback).")
         
         elif texto:
             bot.send_message(CHAT_ID, texto)
             
     except Exception as e:
-        print(f"❌ Erro Crítico Telegram: {e}")
+        print(f"❌ Erro: {e}")
