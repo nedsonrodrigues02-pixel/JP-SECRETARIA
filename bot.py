@@ -15,18 +15,19 @@ tradutor = GoogleTranslator(source='auto', target='pt')
 # --- GATILHOS ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP']
 
-# --- BANCO DE IMAGENS DA JP (Para ilustrar o post) ---
+# --- BANCO DE IMAGENS ATUALIZADO (Links mais estáveis) ---
 IMAGENS_ZUEIRA = [
-    "https://media1.giphy.com/media/trN9df5NmUOqCx21jo/giphy.gif", # Bull run
-    "https://i.pinimg.com/originals/7d/44/1f/7d441fa14580436d10c5383505c24949.gif", # Matrix rain
+    "https://media.tenor.com/images/1c0155b486e929f6498ba4b3b02ba547/tenor.gif", # Doge
+    "https://i.pinimg.com/originals/7d/44/1f/7d441fa14580436d10c5383505c24949.gif", # Matrix
+    "https://media1.giphy.com/media/trN9df5NmUOqCx21jo/giphy.gif", # Bull
     "https://media.giphy.com/media/7FBY7h5Psqd20/giphy.gif", # Money
-    "https://i.gifer.com/origin/f5/f5baef4b6b6677020ab8d091a78a6345_w200.gif", # Stonks
-    "https://media.giphy.com/media/JtBZm3Getg3dqxK0zP/giphy.gif", # Crypto falling/rising
-    "https://media.tenor.com/images/1c0155b486e929f6498ba4b3b02ba547/tenor.gif" # Doge
+    # Adicionei imagens estáticas também caso os GIFs falhem
+    "https://cdn.pixabay.com/photo/2018/01/18/07/31/bitcoin-3089728_1280.jpg",
+    "https://cdn.pixabay.com/photo/2021/05/09/13/10/finance-6240949_1280.jpg"
 ]
 
 def buscar_noticias():
-    print("----- RODANDO A JP SAFADA (V2.5 - TRADUÇÃO) -----")
+    print("----- RODANDO A JP SAFADA (V3.0 - BLINDADA) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
@@ -45,16 +46,14 @@ def buscar_noticias():
         response = requests.get(url, params=params, headers=headers, timeout=15)
         data = response.json()
     except Exception as e:
-        print(f"❌ Erro: {e}")
         return None, f"Chefinho, deu ruim na conexão: {e}"
 
     destaques = []
     
     if 'results' in data:
-        for post in data['results'][:10]: # Analisa as 10 mais quentes
+        for post in data['results'][:10]: 
             titulo_en = post.get('title', '')
             
-            # Tenta pegar url ou slug
             if 'url' in post:
                 link = post['url']
             elif 'slug' in post:
@@ -62,21 +61,16 @@ def buscar_noticias():
             else:
                 link = "https://cryptopanic.com"
 
-            # Fonte da notícia (Domain)
             fonte = post.get('domain', 'Fonte desconhecida')
 
-            # Verifica se tem gatilho
-            encontrou = False
             for gatilho in GATILHOS:
                 if gatilho in titulo_en.upper():
-                    encontrou = True
-                    # --- TRADUÇÃO DO TÍTULO ---
+                    # --- TRADUÇÃO SEGURA ---
                     try:
                         titulo_pt = tradutor.translate(titulo_en)
                     except:
-                        titulo_pt = titulo_en # Se falhar, usa inglês mesmo
+                        titulo_pt = titulo_en 
 
-                    # Formatação Bonita
                     texto_formatado = (
                         f"🔥 *{gatilho} DETECTADO*\n"
                         f"🇧🇷 *{titulo_pt}*\n"
@@ -87,16 +81,13 @@ def buscar_noticias():
                     destaques.append(texto_formatado)
                     break 
     
-    # Se não tiver destaques, não manda nada (ou manda aviso)
     if not destaques:
         return None, "Nada de relevante agora, chefinho."
 
-    # Monta a mensagem final
     cabecalho = "Oi chefinho aqui sou eu a JP SAFADA molestada e trago notícias 💅🏻\n\n"
     corpo = "\n\n━━━━━━━━━━━━━━━━━━━━\n\n".join(destaques)
     msg_final = cabecalho + corpo
     
-    # Escolhe uma imagem aleatória para ilustrar
     imagem = random.choice(IMAGENS_ZUEIRA)
     
     return imagem, msg_final
@@ -106,13 +97,19 @@ if __name__ == "__main__":
         imagem, texto = buscar_noticias()
         
         if imagem and texto and "Nada de relevante" not in texto:
-            # Envia como FOTO com a legenda (caption)
-            bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
-            print("Mensagem com foto enviada!")
+            try:
+                # TENTA ENVIAR A FOTO
+                print(f"Tentando enviar imagem: {imagem}")
+                bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
+                print("✅ Sucesso: Foto enviada!")
+            except Exception as e_foto:
+                # SE A FOTO FALHAR, ENVIA SÓ O TEXTO (FALLBACK)
+                print(f"⚠️ Erro na imagem ({e_foto}). Enviando apenas texto...")
+                bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
+                print("✅ Sucesso: Texto enviado (modo de segurança).")
+        
         elif texto:
-            # Se não tiver foto ou for msg de erro, envia só texto
             bot.send_message(CHAT_ID, texto)
-            print("Mensagem de texto enviada.")
             
     except Exception as e:
-        print(f"Erro no Telegram: {e}")
+        print(f"❌ Erro Crítico Telegram: {e}")
