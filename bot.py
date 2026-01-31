@@ -14,11 +14,11 @@ API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY', '').strip()
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
-# --- MENSAGEM QUANDO NÃO HÁ NOTÍCIAS ---
-MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nVasculhei tudo nos últimos 60 min e juro: Deserto total. O mercado morreu ou a API tá de folga."
+# --- MENSAGEM DE ERRO REAL ---
+MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nVasculhei a última hora inteira e não achei NADA. O site deve estar sem atualizar ou caiu."
 
-# --- GATILHOS (Para dar destaque) ---
-GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE', 'CRYPTO', 'MARKET', 'SEC']
+# --- GATILHOS (Apenas para dar destaque visual) ---
+GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE', 'CRYPTO', 'SEC', 'USDT', 'TETHER']
 
 # --- IMAGENS ---
 IMAGENS_TRABALHO = [
@@ -33,13 +33,13 @@ IMAGENS_TRABALHO = [
 # --- CÉREBRO H1 ---
 def analise_rapida(titulo, par_moeda):
     titulo = titulo.upper()
-    ativo = par_moeda if par_moeda else "o mercado"
+    ativo = par_moeda if par_moeda else "o ativo"
 
     if any(x in titulo for x in ['HIT', 'REACH', 'BREAK', 'SURPASS', 'EXPLODE', 'TOP', 'LIQUIDATE']):
         return f"✅ *Alvo/Rompimento:* Movimento forte em {ativo}. Atenção a realização de lucros."
-    elif any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'DROP']):
+    elif any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'DROP', 'LOW']):
         return f"📉 *Venda/Pânico:* Pressão vendedora em {ativo}. Busque repiques para Short."
-    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BULL']):
+    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BULL', 'UP']):
         return f"🚀 *Alta:* Tendência forte de compra em {ativo}."
     else:
         return f"👀 *Radar:* Fique atento à volatilidade em {ativo}."
@@ -49,10 +49,11 @@ def buscar_noticias():
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
+    # PEGA TUDO (SEM FILTRO)
     params = {
         "auth_token": API_CRYPTOPANIC,
         "public": "true",
-        "kind": "news" # Pega TUDO, sem filtro HOT
+        "kind": "news" 
     }
     
     headers = { "User-Agent": "Mozilla/5.0" }
@@ -101,7 +102,7 @@ def buscar_noticias():
             try: titulo_pt = tradutor.translate(titulo_en)
             except: titulo_pt = titulo_en
 
-            # 5. LÓGICA DE GATILHO vs GERAL
+            # 5. LÓGICA DE GATILHO vs GERAL (AQUI TAVA O ERRO)
             eh_destaque = False
             for gatilho in GATILHOS:
                 if gatilho in titulo_en.upper():
@@ -117,21 +118,21 @@ def buscar_noticias():
                     eh_destaque = True
                     break 
             
-            # SE NÃO FOI DESTAQUE, MANDA COMO GERAL (AQUI QUE TAVA O ERRO ANTES)
+            # SE NÃO FOI DESTAQUE, ENTRA COMO GERAL (CORREÇÃO)
             if not eh_destaque:
                 texto_geral = (
-                    f"📰 *Notícia Geral*\n"
+                    f"📰 *Radar Geral*\n"
                     f"🇧🇷 {titulo_pt}\n"
                     f"🔗 [Ler]({link})"
                 )
                 gerais.append(texto_geral)
 
-    # COMBINA TUDO (Prioriza destaques)
-    # Limita gerais a 3 para não spammar demais se tiver muita coisa
-    conteudo_final = destaques + gerais[:3]
+    # COMBINA TUDO (Prioriza destaques + até 5 gerais)
+    conteudo_final = destaques + gerais[:5]
+
+    print(f"📊 Aprovados: {len(conteudo_final)} (Destaques: {len(destaques)} | Gerais: {len(gerais)})")
 
     if not conteudo_final:
-        print("Realmente nada novo na última hora.")
         return None, MSG_SEM_NOTICIAS
 
     cabecalho = "Oi chefinho, JP SAFADA na área! 💅🏻\n(Monitorando últimos 60min)\n\n"
@@ -153,6 +154,7 @@ if __name__ == "__main__":
                     print("✅ Relatório enviado com Sucesso!")
                 except Exception as e:
                     print(f"Erro ao enviar foto: {e}")
+                    # Se falhar a foto, manda texto
                     bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
             else:
                 bot.send_message(CHAT_ID, texto)
