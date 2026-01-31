@@ -15,10 +15,10 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
 # --- MENSAGEM QUANDO NÃO HÁ NOTÍCIAS ---
-MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nO radar tá ligado, mas não caiu nada na rede nos últimos 45 min. Sigo monitorando! 👀"
+MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nVasculhei tudo nos últimos 60 min e juro: Deserto total. O mercado morreu ou a API tá de folga."
 
-# --- GATILHOS ---
-GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE']
+# --- GATILHOS (Para dar destaque) ---
+GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE', 'CRYPTO', 'MARKET', 'SEC']
 
 # --- IMAGENS ---
 IMAGENS_TRABALHO = [
@@ -31,60 +31,28 @@ IMAGENS_TRABALHO = [
 ]
 
 # --- CÉREBRO H1 ---
-def analise_h1_confirmation(titulo, par_moeda):
+def analise_rapida(titulo, par_moeda):
     titulo = titulo.upper()
-    ativo = par_moeda if par_moeda else "o ativo"
+    ativo = par_moeda if par_moeda else "o mercado"
 
-    if any(x in titulo for x in ['HIT', 'REACH', 'BREAK', 'SURPASS', 'EXPLODE', 'TOP', 'LIQUIDATE', 'JUMP']):
-        return (
-            f"✅ *ATUALIZAÇÃO: Confirmado!*\n"
-            f"• Movimento esperado aconteceu (Rompimento/Alvo).\n"
-            f"• *Ação:* Proteja o lucro ou cuidado com topo.\n"
-            f"🎯 *Status:* Volatilidade alta em *{ativo}*."
-        )
-
-    elif any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'LOW', 'DROP', 'SLIP']):
-        return (
-            f"📉 *Alerta de Short (Venda)*\n"
-            f"• *H1:* Pressão vendedora. Rompimento de suporte.\n"
-            f"• *Estratégia:* Venda em repiques (Pullback).\n"
-            f"🎯 *Foco:* Médias curtas em *{ativo}*."
-        )
-    
-    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BULL', 'RALLY']):
-        return (
-            f"🚀 *Alerta de Long (Compra)*\n"
-            f"• *H1:* Tendência de alta clara.\n"
-            f"• *Estratégia:* Compra no rompimento de máxima.\n"
-            f"🎯 *Foco:* Stop no fundo anterior de *{ativo}*."
-        )
-    
-    elif any(x in titulo for x in ['COMPRESS', 'CONSOLIDATE', 'SIDEWAYS', 'STABLE', 'SQUEEZE', 'RANGE']):
-        return (
-            f"⚠️ *Aguarde Confirmação*\n"
-            f"• *H1:* Preço preso (Consolidação).\n"
-            f"• *Alerta:* Marque topo/fundo e opere SÓ o rompimento.\n"
-            f"🎯 *Foco:* Paciência em *{ativo}*."
-        )
-    
+    if any(x in titulo for x in ['HIT', 'REACH', 'BREAK', 'SURPASS', 'EXPLODE', 'TOP', 'LIQUIDATE']):
+        return f"✅ *Alvo/Rompimento:* Movimento forte em {ativo}. Atenção a realização de lucros."
+    elif any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'DROP']):
+        return f"📉 *Venda/Pânico:* Pressão vendedora em {ativo}. Busque repiques para Short."
+    elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BULL']):
+        return f"🚀 *Alta:* Tendência forte de compra em {ativo}."
     else:
-        return (
-            f"👀 *Radar Ligado*\n"
-            f"• *Análise:* Volume pode entrar a qualquer momento.\n"
-            f"• *Dica:* Fique atento ao fechamento do candle de 1h.\n"
-            f"🎯 *Ativo:* *{ativo}*."
-        )
+        return f"👀 *Radar:* Fique atento à volatilidade em {ativo}."
 
 def buscar_noticias():
-    print("----- JP SAFADA 9.0 (MODO DEBUG X9) -----")
+    print("----- JP SAFADA 10.0 (MODO ASPIRADOR) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
-    # REMOVI O FILTER. PEGA TUDO.
     params = {
         "auth_token": API_CRYPTOPANIC,
         "public": "true",
-        "kind": "news"
+        "kind": "news" # Pega TUDO, sem filtro HOT
     }
     
     headers = { "User-Agent": "Mozilla/5.0" }
@@ -96,86 +64,78 @@ def buscar_noticias():
         return None, f"Chefinho, erro de conexão: {e}"
 
     destaques = []
+    gerais = []
     
-    # --- NOVO TEMPO: 45 MINUTOS ---
+    # --- JANELA DE 60 MINUTOS (SEGURANÇA MÁXIMA) ---
     agora = datetime.utcnow()
-    limite_tempo = agora - timedelta(minutes=45)
+    limite_tempo = agora - timedelta(minutes=60)
     
-    print(f"🕒 Hora Agora (UTC): {agora}")
-    print(f"🛑 Limite de Corte: {limite_tempo}")
+    print(f"🕒 UTC Agora: {agora}")
 
-    count_analisadas = 0
-    
     if 'results' in data:
         for post in data['results']: 
-            count_analisadas += 1
             
-            titulo_log = post.get('title', 'Sem titulo')[:30]
-            
-            # CHECK DE DATA
+            # 1. VERIFICA DATA
             if 'published_at' in post:
                 try:
                     data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
-                    
-                    # LOG X9: Mostra no GitHub o que ele tá vendo
-                    # print(f"📰 Notícia: {titulo_log}... | Data: {data_noticia}")
-                    
                     if data_noticia < limite_tempo:
-                        # Se for velha, ignora
-                        continue 
+                        continue # Pula notícia velha
                 except:
                     continue
             
             titulo_en = post.get('title', '')
             
-            # DETECTOR DE MOEDA
+            # 2. IDENTIFICA MOEDA
             par_usdt = None
             if 'currencies' in post and post['currencies']:
                 codigo = post['currencies'][0].get('code')
-                if codigo:
-                    par_usdt = f"{codigo}/USDT"
+                if codigo: par_usdt = f"{codigo}/USDT"
             
-            if not par_usdt:
-                for g in GATILHOS:
-                    if g in titulo_en.upper() and len(g) <= 5: 
-                        par_usdt = f"{g}/USDT"
-                        break
+            # 3. LINK
+            if 'url' in post: link = post['url']
+            elif 'slug' in post: link = f"https://cryptopanic.com/news/{post['slug']}"
+            else: link = "https://cryptopanic.com"
 
-            # LINK
-            if 'url' in post:
-                link = post['url']
-            elif 'slug' in post:
-                link = f"https://cryptopanic.com/news/{post['slug']}"
-            else:
-                link = "https://cryptopanic.com"
+            # 4. TRADUÇÃO
+            try: titulo_pt = tradutor.translate(titulo_en)
+            except: titulo_pt = titulo_en
 
-            # GATILHOS
+            # 5. LÓGICA DE GATILHO vs GERAL
+            eh_destaque = False
             for gatilho in GATILHOS:
                 if gatilho in titulo_en.upper():
-                    try:
-                        titulo_pt = tradutor.translate(titulo_en)
-                    except:
-                        titulo_pt = titulo_en 
-                    
-                    analise = analise_h1_confirmation(titulo_en, par_usdt)
-
-                    texto_formatado = (
-                        f"🔥 *{gatilho} DETECTADO (H1)*\n"
-                        f"🇧🇷 *{titulo_pt}*\n\n" 
-                        f"{analise}\n\n"
-                        f"🔗 [Ler matéria completa]({link})"
+                    # É DESTAQUE!
+                    analise = analise_rapida(titulo_en, par_usdt)
+                    texto = (
+                        f"🔥 *{gatilho} DETECTADO*\n"
+                        f"🇧🇷 {titulo_pt}\n"
+                        f"{analise}\n"
+                        f"🔗 [Ler]({link})"
                     )
-                    destaques.append(texto_formatado)
-                    print(f"✅ BINGO! Notícia aprovada: {titulo_en}")
+                    destaques.append(texto)
+                    eh_destaque = True
                     break 
-    
-    print(f"📊 Total analisado: {count_analisadas} | Aprovados: {len(destaques)}")
+            
+            # SE NÃO FOI DESTAQUE, MANDA COMO GERAL (AQUI QUE TAVA O ERRO ANTES)
+            if not eh_destaque:
+                texto_geral = (
+                    f"📰 *Notícia Geral*\n"
+                    f"🇧🇷 {titulo_pt}\n"
+                    f"🔗 [Ler]({link})"
+                )
+                gerais.append(texto_geral)
 
-    if not destaques:
+    # COMBINA TUDO (Prioriza destaques)
+    # Limita gerais a 3 para não spammar demais se tiver muita coisa
+    conteudo_final = destaques + gerais[:3]
+
+    if not conteudo_final:
+        print("Realmente nada novo na última hora.")
         return None, MSG_SEM_NOTICIAS
 
-    cabecalho = "Oi chefinho, JP SAFADA com atualizações de H1 pra você 💅🏻⏳\n\n"
-    corpo = "\n\n➖➖➖➖➖➖➖➖➖➖\n\n".join(destaques)
+    cabecalho = "Oi chefinho, JP SAFADA na área! 💅🏻\n(Monitorando últimos 60min)\n\n"
+    corpo = "\n\n➖➖➖➖➖\n\n".join(conteudo_final)
     msg_final = cabecalho + corpo
     
     imagem = random.choice(IMAGENS_TRABALHO)
@@ -190,12 +150,13 @@ if __name__ == "__main__":
             if imagem:
                 try:
                     bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
-                    print("✅ Relatório H1 enviado!")
-                except:
+                    print("✅ Relatório enviado com Sucesso!")
+                except Exception as e:
+                    print(f"Erro ao enviar foto: {e}")
                     bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
             else:
                 bot.send_message(CHAT_ID, texto)
-                print("✅ Aviso de 'Sem Notícias' enviado.")
+                print("✅ Aviso enviado.")
             
     except Exception as e:
         print(f"❌ Erro Crítico: {e}")
