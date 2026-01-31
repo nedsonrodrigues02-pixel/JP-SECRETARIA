@@ -15,7 +15,7 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
 # --- MENSAGEM QUANDO NÃO HÁ NOTÍCIAS ---
-MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nSem notícias novas nos últimos 29 min. O mercado tá calmo... Por enquanto! 🤫"
+MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nO radar tá ligado, mas não caiu nada na rede nos últimos 45 min. Sigo monitorando! 👀"
 
 # --- GATILHOS ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE']
@@ -37,55 +37,53 @@ def analise_h1_confirmation(titulo, par_moeda):
 
     if any(x in titulo for x in ['HIT', 'REACH', 'BREAK', 'SURPASS', 'EXPLODE', 'TOP', 'LIQUIDATE', 'JUMP']):
         return (
-            f"✅ *ATUALIZAÇÃO DE MERCADO: Confirmado!*\n"
-            f"• O movimento esperado aconteceu. Notícia indica rompimento ou alvo atingido.\n"
-            f"• *Ação:* Se já entrou, proteja o lucro (Stop Gain). Se não entrou, CUIDADO com comprar topo.\n"
-            f"🎯 *Status:* Volatilidade alta confirmada em *{ativo}*."
+            f"✅ *ATUALIZAÇÃO: Confirmado!*\n"
+            f"• Movimento esperado aconteceu (Rompimento/Alvo).\n"
+            f"• *Ação:* Proteja o lucro ou cuidado com topo.\n"
+            f"🎯 *Status:* Volatilidade alta em *{ativo}*."
         )
 
     elif any(x in titulo for x in ['CAPITULATE', 'FEAR', 'PANIC', 'CRASH', 'DUMP', 'LOW', 'DROP', 'SLIP']):
         return (
             f"📉 *Alerta de Short (Venda)*\n"
-            f"• *H1:* Pressão vendedora forte. Rompimento de suporte detectado.\n"
-            f"• *Estratégia:* Venda em repiques (Pullback de baixa).\n"
-            f"🎯 *Foco:* Acompanhe médias móveis curtas em *{ativo}*."
+            f"• *H1:* Pressão vendedora. Rompimento de suporte.\n"
+            f"• *Estratégia:* Venda em repiques (Pullback).\n"
+            f"🎯 *Foco:* Médias curtas em *{ativo}*."
         )
     
     elif any(x in titulo for x in ['ATH', 'HIGH', 'SURGE', 'SOAR', 'MOON', 'BULL', 'RALLY']):
         return (
             f"🚀 *Alerta de Long (Compra)*\n"
-            f"• *H1:* Tendência de alta clara. Entrada a favor do fluxo.\n"
-            f"• *Estratégia:* Compra no rompimento do candle anterior de 1h.\n"
-            f"🎯 *Foco:* Stop abaixo do último fundo de *{ativo}*."
+            f"• *H1:* Tendência de alta clara.\n"
+            f"• *Estratégia:* Compra no rompimento de máxima.\n"
+            f"🎯 *Foco:* Stop no fundo anterior de *{ativo}*."
         )
     
     elif any(x in titulo for x in ['COMPRESS', 'CONSOLIDATE', 'SIDEWAYS', 'STABLE', 'SQUEEZE', 'RANGE']):
         return (
             f"⚠️ *Aguarde Confirmação*\n"
-            f"• *H1:* O preço está preso (Consolidação). Não opere no meio do gráfico.\n"
-            f"• *Alerta:* Marque o topo e o fundo da última hora. Opere APENAS o rompimento.\n"
+            f"• *H1:* Preço preso (Consolidação).\n"
+            f"• *Alerta:* Marque topo/fundo e opere SÓ o rompimento.\n"
             f"🎯 *Foco:* Paciência em *{ativo}*."
         )
     
     else:
         return (
             f"👀 *Radar Ligado*\n"
-            f"• *Análise:* Notícia relevante entrando. Pode gerar volume repentino.\n"
-            f"• *Dica:* Fique atento ao fechamento do candle de 1h para confirmar a direção.\n"
+            f"• *Análise:* Volume pode entrar a qualquer momento.\n"
+            f"• *Dica:* Fique atento ao fechamento do candle de 1h.\n"
             f"🎯 *Ativo:* *{ativo}*."
         )
 
 def buscar_noticias():
-    print("----- JP SAFADA 8.0 (MODO TEMPO REAL) -----")
+    print("----- JP SAFADA 9.0 (MODO DEBUG X9) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
-    # --- MUDANÇA CRÍTICA AQUI ---
-    # Removi o 'filter: hot'. Agora ele pega TUDO em ordem cronológica.
+    # REMOVI O FILTER. PEGA TUDO.
     params = {
         "auth_token": API_CRYPTOPANIC,
         "public": "true",
-        # "filter": "hot",  <-- REMOVIDO PARA PARAR DE IGNORAR NEWS RECENTES
         "kind": "news"
     }
     
@@ -95,32 +93,42 @@ def buscar_noticias():
         response = requests.get(url, params=params, headers=headers, timeout=15)
         data = response.json()
     except Exception as e:
-        return None, f"Chefinho, deu falha na conexão: {e}"
+        return None, f"Chefinho, erro de conexão: {e}"
 
     destaques = []
     
-    # --- FILTRO DE TEMPO (29 MINUTOS) ---
+    # --- NOVO TEMPO: 45 MINUTOS ---
     agora = datetime.utcnow()
-    limite_tempo = agora - timedelta(minutes=29)
+    limite_tempo = agora - timedelta(minutes=45)
+    
+    print(f"🕒 Hora Agora (UTC): {agora}")
+    print(f"🛑 Limite de Corte: {limite_tempo}")
 
+    count_analisadas = 0
+    
     if 'results' in data:
         for post in data['results']: 
+            count_analisadas += 1
             
-            # Checa data para não repetir
+            titulo_log = post.get('title', 'Sem titulo')[:30]
+            
+            # CHECK DE DATA
             if 'published_at' in post:
                 try:
                     data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
                     
-                    # LOG DE DEPURAÇÃO (Pra você ver no GitHub se precisar)
-                    # print(f"Notícia: {post['title']} | Data: {data_noticia} | Limite: {limite_tempo}")
-
+                    # LOG X9: Mostra no GitHub o que ele tá vendo
+                    # print(f"📰 Notícia: {titulo_log}... | Data: {data_noticia}")
+                    
                     if data_noticia < limite_tempo:
-                        continue # Pula notícia velha (> 29 min)
+                        # Se for velha, ignora
+                        continue 
                 except:
-                    pass 
+                    continue
             
             titulo_en = post.get('title', '')
             
+            # DETECTOR DE MOEDA
             par_usdt = None
             if 'currencies' in post and post['currencies']:
                 codigo = post['currencies'][0].get('code')
@@ -133,6 +141,7 @@ def buscar_noticias():
                         par_usdt = f"{g}/USDT"
                         break
 
+            # LINK
             if 'url' in post:
                 link = post['url']
             elif 'slug' in post:
@@ -140,6 +149,7 @@ def buscar_noticias():
             else:
                 link = "https://cryptopanic.com"
 
+            # GATILHOS
             for gatilho in GATILHOS:
                 if gatilho in titulo_en.upper():
                     try:
@@ -156,10 +166,12 @@ def buscar_noticias():
                         f"🔗 [Ler matéria completa]({link})"
                     )
                     destaques.append(texto_formatado)
+                    print(f"✅ BINGO! Notícia aprovada: {titulo_en}")
                     break 
     
+    print(f"📊 Total analisado: {count_analisadas} | Aprovados: {len(destaques)}")
+
     if not destaques:
-        print("Sem notícias novas na janela de 29 min.")
         return None, MSG_SEM_NOTICIAS
 
     cabecalho = "Oi chefinho, JP SAFADA com atualizações de H1 pra você 💅🏻⏳\n\n"
