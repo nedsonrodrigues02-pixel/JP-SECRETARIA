@@ -14,8 +14,8 @@ API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY', '').strip()
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
-# --- VARIÁVEL DE MENSAGEM VAZIA (Sua solicitação) ---
-MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nSem notícias por enquanto, o mercado tá tirando um cochilo. Daqui a pouco eu volto!"
+# --- MENSAGEM QUANDO NÃO HÁ NOTÍCIAS ---
+MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nSem notícias novas nos últimos 30 min. O mercado tá calmo... Por enquanto! 🤫"
 
 # --- GATILHOS ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE']
@@ -76,7 +76,7 @@ def analise_h1_confirmation(titulo, par_moeda):
         )
 
 def buscar_noticias():
-    print("----- JP SAFADA 7.1 (COM AVISO DE SEM NEWS) -----")
+    print("----- JP SAFADA 7.1 (CORRIGIDA) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
@@ -104,10 +104,14 @@ def buscar_noticias():
     if 'results' in data:
         for post in data['results']: 
             
+            # Checa data para não repetir
             if 'published_at' in post:
-                data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
-                if data_noticia < limite_tempo:
-                    continue
+                try:
+                    data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
+                    if data_noticia < limite_tempo:
+                        continue # Pula notícia velha
+                except:
+                    pass # Se der erro na data, segue o baile
             
             titulo_en = post.get('title', '')
             
@@ -151,7 +155,6 @@ def buscar_noticias():
     # --- AQUI ESTÁ A LÓGICA DA VARIÁVEL ---
     if not destaques:
         print("Sem notícias novas. Enviando aviso padrão.")
-        # Retorna SEM IMAGEM (None) e com a mensagem de aviso
         return None, MSG_SEM_NOTICIAS
 
     cabecalho = "Oi chefinho, JP SAFADA com atualizações de H1 pra você 💅🏻⏳\n\n"
@@ -167,18 +170,16 @@ if __name__ == "__main__":
         imagem, texto = buscar_noticias()
         
         if texto:
-            # Se tiver imagem, é notícia (manda foto)
             if imagem:
                 try:
                     bot.send_photo(CHAT_ID, photo=imagem, caption=texto, parse_mode='Markdown')
                     print("✅ Relatório H1 enviado!")
                 except:
                     bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
-            
-            # Se NÃO tiver imagem, é o aviso de "Sem Notícias" (manda só texto)
             else:
+                # Caso do aviso "Sem Notícias"
                 bot.send_message(CHAT_ID, texto)
                 print("✅ Aviso de 'Sem Notícias' enviado.")
             
     except Exception as e:
-        print(f"❌
+        print(f"❌ Erro Crítico: {e}")
