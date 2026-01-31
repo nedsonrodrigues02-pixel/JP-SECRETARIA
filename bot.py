@@ -15,7 +15,7 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
 # --- MENSAGEM QUANDO NÃO HÁ NOTÍCIAS ---
-MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nSem notícias novas nos últimos 30 min. O mercado tá calmo... Por enquanto! 🤫"
+MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nSem notícias novas nos últimos 29 min. O mercado tá calmo... Por enquanto! 🤫"
 
 # --- GATILHOS ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE']
@@ -76,7 +76,7 @@ def analise_h1_confirmation(titulo, par_moeda):
         )
 
 def buscar_noticias():
-    print("----- JP SAFADA 7.1 (CORRIGIDA) -----")
+    print("----- JP SAFADA 7.2 (JANELA 29 MIN) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
@@ -97,9 +97,10 @@ def buscar_noticias():
 
     destaques = []
     
-    # Filtro de tempo (35 min)
+    # --- FILTRO DE TEMPO (29 MINUTOS) ---
+    # Ajustado para não repetir notícias do ciclo anterior
     agora = datetime.utcnow()
-    limite_tempo = agora - timedelta(minutes=35)
+    limite_tempo = agora - timedelta(minutes=29)
 
     if 'results' in data:
         for post in data['results']: 
@@ -109,9 +110,9 @@ def buscar_noticias():
                 try:
                     data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
                     if data_noticia < limite_tempo:
-                        continue # Pula notícia velha
+                        continue # Pula notícia velha (> 29 min)
                 except:
-                    pass # Se der erro na data, segue o baile
+                    pass 
             
             titulo_en = post.get('title', '')
             
@@ -183,3 +184,5 @@ if __name__ == "__main__":
             
     except Exception as e:
         print(f"❌ Erro Crítico: {e}")
+
+ 
