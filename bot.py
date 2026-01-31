@@ -76,14 +76,16 @@ def analise_h1_confirmation(titulo, par_moeda):
         )
 
 def buscar_noticias():
-    print("----- JP SAFADA 7.2 (JANELA 29 MIN) -----")
+    print("----- JP SAFADA 8.0 (MODO TEMPO REAL) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
+    # --- MUDANÇA CRÍTICA AQUI ---
+    # Removi o 'filter: hot'. Agora ele pega TUDO em ordem cronológica.
     params = {
         "auth_token": API_CRYPTOPANIC,
         "public": "true",
-        "filter": "hot",
+        # "filter": "hot",  <-- REMOVIDO PARA PARAR DE IGNORAR NEWS RECENTES
         "kind": "news"
     }
     
@@ -98,7 +100,6 @@ def buscar_noticias():
     destaques = []
     
     # --- FILTRO DE TEMPO (29 MINUTOS) ---
-    # Ajustado para não repetir notícias do ciclo anterior
     agora = datetime.utcnow()
     limite_tempo = agora - timedelta(minutes=29)
 
@@ -109,6 +110,10 @@ def buscar_noticias():
             if 'published_at' in post:
                 try:
                     data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
+                    
+                    # LOG DE DEPURAÇÃO (Pra você ver no GitHub se precisar)
+                    # print(f"Notícia: {post['title']} | Data: {data_noticia} | Limite: {limite_tempo}")
+
                     if data_noticia < limite_tempo:
                         continue # Pula notícia velha (> 29 min)
                 except:
@@ -153,9 +158,8 @@ def buscar_noticias():
                     destaques.append(texto_formatado)
                     break 
     
-    # --- AQUI ESTÁ A LÓGICA DA VARIÁVEL ---
     if not destaques:
-        print("Sem notícias novas. Enviando aviso padrão.")
+        print("Sem notícias novas na janela de 29 min.")
         return None, MSG_SEM_NOTICIAS
 
     cabecalho = "Oi chefinho, JP SAFADA com atualizações de H1 pra você 💅🏻⏳\n\n"
@@ -178,11 +182,8 @@ if __name__ == "__main__":
                 except:
                     bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
             else:
-                # Caso do aviso "Sem Notícias"
                 bot.send_message(CHAT_ID, texto)
                 print("✅ Aviso de 'Sem Notícias' enviado.")
             
     except Exception as e:
         print(f"❌ Erro Crítico: {e}")
-
- 
