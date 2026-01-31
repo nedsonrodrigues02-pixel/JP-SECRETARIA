@@ -2,8 +2,6 @@ import os
 import requests
 import telebot
 import random
-from datetime import datetime, timedelta
-from dateutil import parser
 from deep_translator import GoogleTranslator
 
 # --- CONFIGURAÇÕES ---
@@ -14,20 +12,17 @@ API_CRYPTOPANIC = os.environ.get('CRYPTOPANIC_KEY', '').strip()
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 tradutor = GoogleTranslator(source='auto', target='pt')
 
-# --- MENSAGEM DE ERRO REAL ---
-MSG_SEM_NOTICIAS = "Oi chefinho, JP SAFADA aqui 💅🏻\n\nVasculhei a última hora inteira e não achei NADA. O site deve estar sem atualizar ou caiu."
+# --- MENSAGEM SE DER MERDA ---
+MSG_SEM_NOTICIAS = "Oi chefinho. A API me devolveu uma lista VAZIA. O problema é lá no CryptoPanic, não em mim."
 
-# --- GATILHOS (Apenas para dar destaque visual) ---
+# --- GATILHOS (Só pra pintar de bonitinho, não filtra mais nada) ---
 GATILHOS = ['TRUMP', 'MUSK', 'ELON', 'BLACKROCK', 'ETF', 'FED', 'BTC', 'SOL', 'PEPE', 'RWA', 'AI', 'WHALE', 'DOGE', 'XRP', 'CARDANO', 'ADA', 'ETH', 'BINANCE', 'CRYPTO', 'SEC', 'USDT', 'TETHER']
 
 # --- IMAGENS ---
 IMAGENS_TRABALHO = [
-    "https://images.unsplash.com/photo-1611974765270-ca1258634369?q=80&w=1000&auto=format&fit=crop", 
     "https://images.unsplash.com/photo-1642790106117-e829e14a795f?q=80&w=1000&auto=format&fit=crop", 
     "https://images.unsplash.com/photo-1621504450168-38f647311816?q=80&w=1000&auto=format&fit=crop", 
-    "https://cdn.pixabay.com/photo/2017/09/07/08/54/money-2724241_1280.jpg", 
-    "https://cdn.pixabay.com/photo/2021/04/30/16/47/binance-6219389_1280.jpg", 
-    "https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=1000&auto=format&fit=crop"
+    "https://cdn.pixabay.com/photo/2021/04/30/16/47/binance-6219389_1280.jpg"
 ]
 
 # --- CÉREBRO H1 ---
@@ -45,11 +40,11 @@ def analise_rapida(titulo, par_moeda):
         return f"👀 *Radar:* Fique atento à volatilidade em {ativo}."
 
 def buscar_noticias():
-    print("----- JP SAFADA 10.0 (MODO ASPIRADOR) -----")
+    print("----- JP SAFADA 11.0 (SEM LIMITES) -----")
     
     url = "https://cryptopanic.com/api/developer/v2/posts/" 
     
-    # PEGA TUDO (SEM FILTRO)
+    # PEGA TUDO
     params = {
         "auth_token": API_CRYPTOPANIC,
         "public": "true",
@@ -67,46 +62,35 @@ def buscar_noticias():
     destaques = []
     gerais = []
     
-    # --- JANELA DE 60 MINUTOS (SEGURANÇA MÁXIMA) ---
-    agora = datetime.utcnow()
-    limite_tempo = agora - timedelta(minutes=60)
-    
-    print(f"🕒 UTC Agora: {agora}")
+    # --- SEM CHECAGEM DE DATA, SEM CHECAGEM DE HORA ---
+    # --- VAI MANDAR O QUE TIVER ---
 
     if 'results' in data:
+        print(f"Encontrei {len(data['results'])} notícias na API. Processando...")
+        
         for post in data['results']: 
-            
-            # 1. VERIFICA DATA
-            if 'published_at' in post:
-                try:
-                    data_noticia = parser.parse(post['published_at']).replace(tzinfo=None)
-                    if data_noticia < limite_tempo:
-                        continue # Pula notícia velha
-                except:
-                    continue
             
             titulo_en = post.get('title', '')
             
-            # 2. IDENTIFICA MOEDA
+            # IDENTIFICA MOEDA
             par_usdt = None
             if 'currencies' in post and post['currencies']:
                 codigo = post['currencies'][0].get('code')
                 if codigo: par_usdt = f"{codigo}/USDT"
             
-            # 3. LINK
+            # LINK
             if 'url' in post: link = post['url']
             elif 'slug' in post: link = f"https://cryptopanic.com/news/{post['slug']}"
             else: link = "https://cryptopanic.com"
 
-            # 4. TRADUÇÃO
+            # TRADUÇÃO
             try: titulo_pt = tradutor.translate(titulo_en)
             except: titulo_pt = titulo_en
 
-            # 5. LÓGICA DE GATILHO vs GERAL (AQUI TAVA O ERRO)
+            # CLASSIFICAÇÃO (Mas manda tudo)
             eh_destaque = False
             for gatilho in GATILHOS:
                 if gatilho in titulo_en.upper():
-                    # É DESTAQUE!
                     analise = analise_rapida(titulo_en, par_usdt)
                     texto = (
                         f"🔥 *{gatilho} DETECTADO*\n"
@@ -118,24 +102,24 @@ def buscar_noticias():
                     eh_destaque = True
                     break 
             
-            # SE NÃO FOI DESTAQUE, ENTRA COMO GERAL (CORREÇÃO)
             if not eh_destaque:
                 texto_geral = (
-                    f"📰 *Radar Geral*\n"
+                    f"📰 *Geral*\n"
                     f"🇧🇷 {titulo_pt}\n"
                     f"🔗 [Ler]({link})"
                 )
                 gerais.append(texto_geral)
 
-    # COMBINA TUDO (Prioriza destaques + até 5 gerais)
-    conteudo_final = destaques + gerais[:5]
+    # PEGA AS 5 PRIMEIRAS QUE TIVER (Prioridade pra Destaque)
+    conteudo_final = destaques + gerais
+    conteudo_final = conteudo_final[:5] # Limita a 5 pra não floodar demais
 
-    print(f"📊 Aprovados: {len(conteudo_final)} (Destaques: {len(destaques)} | Gerais: {len(gerais)})")
+    print(f"Vou enviar {len(conteudo_final)} mensagens.")
 
     if not conteudo_final:
         return None, MSG_SEM_NOTICIAS
 
-    cabecalho = "Oi chefinho, JP SAFADA na área! 💅🏻\n(Monitorando últimos 60min)\n\n"
+    cabecalho = "Oi chefinho, JP SAFADA LIBEROU TUDO! 💅🏻\n\n"
     corpo = "\n\n➖➖➖➖➖\n\n".join(conteudo_final)
     msg_final = cabecalho + corpo
     
@@ -154,7 +138,6 @@ if __name__ == "__main__":
                     print("✅ Relatório enviado com Sucesso!")
                 except Exception as e:
                     print(f"Erro ao enviar foto: {e}")
-                    # Se falhar a foto, manda texto
                     bot.send_message(CHAT_ID, texto, parse_mode='Markdown')
             else:
                 bot.send_message(CHAT_ID, texto)
